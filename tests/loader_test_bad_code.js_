@@ -1,0 +1,4 @@
+(function () {
+	"use strict";
+	var r = require("./not_there_.js");
+})();

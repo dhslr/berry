@@ -1,0 +1,39 @@
+{
+  "name": "berry",
+  "version": "0.0.2",
+  "description": "Berry is a web service which runs node.js applications.",
+  "main": "berry.js",
+  "directories": {
+    "lib": "lib",
+    "test": "tests"
+  },
+  "scripts": {
+	"start": "node ./server.js",
+    "test": "cd ./tests;nodeunit ."
+  },
+  "keywords": [
+    "berry",
+    "web",
+    "restify"
+  ],
+  "bin": {
+	  "berry": "node ./server.js"
+  },
+  "dependencies" : {
+	  "restify" : ">=2.3.5",
+	  "mkpath" : ">=0.1.0",
+	  "appool" : "git://github.com/tequnix/appool.git",
+	  "utilities" : "git://github.com/tequnix/utilities.git"
+  },
+  "engine" : "node >= 0.8.0",
+  "author": {
+	  "name" : "Daniel Hassler",
+	  "email" : "tequnix@gmail.com"
+  },
+  "repository": {
+	  "type": "git",
+	  "url" : "http://github.com/tequnix/berry.git"
+  },
+  "private": true,
+  "license": "BSD"
+}

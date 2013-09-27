@@ -1,0 +1,4 @@
+(function () {
+	"use strict";
+	var r = require("./loader_test_good_code.js_");
+})();
