@@ -1,6 +1,6 @@
 (function () {
 	"use strict";
-	var appRunner = require("../apprunner.js").createAppRunner(),
+	var appRunner = require("../lib/apprunner.js").createAppRunner(),
 		path = require("path"),
 		fs = require("fs"),
 		code = new Buffer("console.log(\"Test\");"),

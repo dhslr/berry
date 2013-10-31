@@ -1,6 +1,6 @@
 (function () {
 	"use strict";
-	var loader = require("../loader.js"),
+	var loader = require("../lib/loader.js"),
 		BADCODE = "./loader_test_bad_code.js_",
 		GOODCODE = "./loader_test_good_code.js_",
 		path = require("path"),
