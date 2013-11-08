@@ -8,7 +8,7 @@
     "test": "tests"
   },
   "scripts": {
-	"start": "node ./server.js",
+	"start": "node server.js",
     "test": "cd ./tests;nodeunit ."
   },
   "keywords": [
@@ -17,7 +17,7 @@
     "restify"
   ],
   "bin": {
-	  "berry": "node ./server.js"
+	  "berry": "./server.js"
   },
   "dependencies" : {
 	  "restify" : ">=2.3.5",
