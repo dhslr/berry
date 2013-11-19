@@ -8,8 +8,8 @@
     "test": "tests"
   },
   "scripts": {
-	"start": "node server.js",
-    "test": "cd tests;nodeunit ."
+    "test": "cd tests;nodeunit .",
+	"start": "node ./server.js"
   },
   "keywords": [
     "berry",
