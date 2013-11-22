@@ -3,22 +3,20 @@
 	var appool = require("appool"),
 		restify = require("restify"),
 		mkpath = require("mkpath"),
+		path = require("path"),
 		appRunner = require("./lib/apprunner").createAppRunner(),
+		_ = require("lodash"),
+		exec = require("child_process").exec,
 		http_server,
 		AppHandler,
 		config = require("./config/default.js"),
 		appHandler;
 		
+
 	try {
-		process.chdir(config.sandbox_dir);
+		mkpath.sync(config.sandbox_dir); 
 	} catch (err) {
-		if (err.code === "ENOENT") {
-			mkpath.sync(config.sandbox_dir); 
-			process.chdir(config.sandbox_dir);
-		} else {
-			console.log(err);
-			process.exit(1);
-		}
+		console.log(err);
 	}
 	appool.setPrefix(config.sandbox_dir);
 	http_server = appool.getServer();
@@ -46,7 +44,7 @@
 	*/
 	http_server.get("/running/:pid", function (req, res, next) {
 		var child = appHandler.children[req.params.pid];
-		if (typeof child !== "undefined") {
+		if (!_.isUndefined(child)) {
 			child.data.forEach(function (buffer) {
 				res.write(buffer.toString());
 			});
@@ -72,7 +70,7 @@
 	http_server.post("/apps/:name/run", function (req, res, next) {
 		var name = req.params.name;
 		console.log(req.params);
-		if (typeof name  === "undefined") {
+		if (_.isUndefined(name)) {
 			res.send(new restify.ResourceNotFoundError("No such App!"));
 		} else {
 			appHandler.run(name, function (err, pid) {
@@ -100,7 +98,10 @@
 	AppHandler = function () {
 		var remove_app,
 			running_apps = [],
-			_running_apps_res = {},
+			handle_data,
+			remove_child,
+			update,
+			child_cwd = path.join(process.cwd(), config.sandbox_dir, "/lib"),
 			self = this;
 
 		this.children = {};
@@ -116,53 +117,74 @@
 			});
 		};
 		*/
-		this.run = function (app_name, cb) {
-			var child,
-				app = appool.getApps()[app_name];
-			//console.log(app);
-			if (typeof app !== "undefined") {
-				child = appRunner.run({
-					dir: app.path,
-					filename: app.main,
-					name: app.name
-				});
-				child.data = [];
-				child.on("executed", function (pid) {
-					if (typeof cb === "function") {
-						cb(null, pid);
-					}
-					self.children[pid] = child;
-					child.pid = pid;
-					child.stdout.on("data", function (data) {
-						child.data.push(data);
-						//TODO: better memory control
-						if (child.data.length > 10) {
-							child.data = [data];
-						}
-					});
-				});
-				child.on("exit", function (signal ,code) {
-					//TODO: wait 100 sec until ressource gets deleted!?
-					setTimeout(function () {
-						delete self.children[child.pid];
-					}, 100000);
-				});
-				child.on("error", function (err) {
-					if (typeof cb === "function") {
-						cb(err);
-					}
-					console.log(err);
-					delete self.children[child.pid];
-				});
-			} else {
-				if (typeof cb === "function") {
-					cb(new restify.ResourceNotFoundError("App " + app_name +
-								" does not exist!"));
+		handle_data = function (child) {
+			return function (data) {
+				child.data.push(data);
+				//TODO: better memory control
+				if (child.data.length > 10) {
+					child.data = [data];
 				}
 			}
 		};
+		remove_child = function (pid) {
+			var child = self.children[pid];
+			if (!_.isUndefined(child)) {
+				child.removeAllListeners();
+				delete self.children[child.pid];
+				update();
+			}
+		};
+		update = function () {
+			var running = _.filter(self.children, function (child, pid) {
+				return child.running;
+			});
+			running_apps = _.pluck(running, "pid");
+		};
+		this.run= function (app_name, cb) {
+			var child,
+				app = appool.getApps()[app_name];
+			if (!_.isUndefined(app)) {
+
+				child = exec("npm start " + app.name, {cwd: child_cwd},
+					function (err, stdout, stderr) {
+						if (!err) {
+							child.data = [];
+							child.stdout = stdout;
+							child.stderr = stderr;
+							self.children[child.pid] = child;
+							child.running = true;
+							stdout.on("data", handle_data(child));
+							stderr.on("data", handle_data(child));
+							update();
+							child.on("close", function (code) {
+								child.running = false;
+								console.log("child close with code: %j", code);
+								setTimeout(function () {
+									self.remove_child(pid);
+								}, 100000);
+								update();
+							});
+							child.on("exit", function (code) {
+								child.running = false;
+								console.log("child exited with code: %j", code);
+								setTimeout(function () {
+									self.remove_child(pid);
+								}, 100000);
+								update();
+							});
+						} else {
+							if (_.isFunction(cb)) {
+								cb(err);
+							}
+						}
+					});
+			}
+		};
 		this.kill = function (pid) {
-			appRunner.kill(pid);
+			var child = self.children[pid];
+			if (!_.isUndefined(child)) {
+				child.kill();
+			}
 		};
 	};
 	appHandler = new AppHandler();
