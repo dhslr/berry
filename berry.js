@@ -6,7 +6,7 @@
 		path = require("path"),
 		//appRunner = require("./lib/apprunner").createAppRunner(),
 		_ = require("lodash"),
-		spawn = require("child_process").spawn,
+		exec = require("child_process").exec,
 		http_server,
 		AppHandler,
 		config = require("./config/default.js"),
@@ -118,10 +118,12 @@
 		*/
 		handle_data = function (child) {
 			return function (data) {
-				child.data.push(data);
-				//TODO: better memory control
-				if (child.data.length > 10) {
-					child.data = [data];
+				if (!_.isUndefined(data) && data.length > 0) {
+					child.data.push(data);
+					//TODO: better memory control
+					if (child.data.length > 10) {
+						child.data = [data];
+					}
 				}
 			};
 		};
@@ -145,32 +147,28 @@
 			var child,
 				app = appool.getApps()[app_name];
 			if (!_.isUndefined(app)) {
-				child = spawn("npm", ["start", app.name], {cwd: child_cwd});
-
+				child = exec("npm start " + app.name, {cwd: child_cwd},
+						function (err, stdout, stderr) {
+							//gets called when process terminates
+							//handle_data(child)(stdout);
+							//handle_data(child)(stderr);
+							child.running = false;
+							setTimeout(function () {
+								self.remove_child(child.pid);
+							}, 100000);
+							update();
+				});
 				child.data = [];
 				child.running = true;
 				child.app = app;
 				self.children[child.pid] = child;
 				update();
-
+				child.on("exit", function (code, signal) {
+					child.running = false;
+					update();
+				});
 				child.on("error", function (err) {
 					cb(err);
-				});
-				child.on("close", function (code) {
-					child.running = false;
-					console.log("child close with code: %j", code);
-					setTimeout(function () {
-						self.remove_child(child.pid);
-					}, 100000);
-					update();
-				});
-				child.on("exit", function (code) {
-					child.running = false;
-					console.log("child exited with code: %j", code);
-					setTimeout(function () {
-						self.remove_child(child.pid);
-					}, 100000);
-					update();
 				});
 				child.stdout.on("data", handle_data(child));
 				child.stderr.on("data", handle_data(child));
@@ -181,7 +179,7 @@
 		this.kill = function (pid) {
 			var child = self.children[pid];
 			if (!_.isUndefined(child)) {
-				child.kill("SIGTERM");
+				child.kill();
 			}
 		};
 	};
