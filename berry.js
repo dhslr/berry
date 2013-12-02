@@ -181,7 +181,7 @@
 		this.kill = function (pid) {
 			var child = self.children[pid];
 			if (!_.isUndefined(child)) {
-				child.kill();
+				child.kill("SIGTERM");
 			}
 		};
 	};
