@@ -1,1 +1,1 @@
-exports.sandbox_dir = ".";
+exports.sandbox_dir = "./sandbox";
