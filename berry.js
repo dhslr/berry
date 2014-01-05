@@ -150,7 +150,7 @@
             running_apps = [];
             _.forEach(self.children, function (child) {
                 if (child.running) {
-                    running_apps.push({ "name": child.app.name, "pid": child.pid });
+                    running_apps.push({ "name": child.app.name, "pid": child.pid, "debug": child.debug });
                 }
             });
         };
@@ -177,6 +177,7 @@
                             }, 100000);
                             update();
                         });
+                child.debug = options.debug;
                 child.data = [];
                 child.running = true;
                 child.app = app;
