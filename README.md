@@ -10,6 +10,6 @@ with a DELETE request. The corresponding resource will then get deleted.
 
 Berry can be installed with npm:
 
-    % git clone https://github.com/tequnix/berry
-    % cd berry
-    % npm install
+    git clone https://github.com/tequnix/berry
+    cd berry
+    npm install
